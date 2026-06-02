@@ -6,7 +6,6 @@ import { useEffect, useState } from "react";
 
 import FeeChart from "@/components/FeeChart";
 
-// Dynamic Map Import
 const MapComponent = dynamic(
   () => import("@/components/MapComponent"),
   {
@@ -17,74 +16,137 @@ const MapComponent = dynamic(
 export default function Home() {
 
   const [fees, setFees] = useState<any[]>([]);
-  const [selectedBank, setSelectedBank] = useState("All");
+
+  const [selectedBank, setSelectedBank] =
+    useState("All");
+
+  const [selectedFeeType, setSelectedFeeType] =
+    useState("All");
+
 
   useEffect(() => {
 
-    axios
-      .get("http://127.0.0.1:8000/api/fees")
-      .then((res) => {
+    const fetchData = () => {
 
-        setFees(res.data);
+      axios
 
-      })
-      .catch((err) => {
+        .get(
+          "http://127.0.0.1:8000/api/fees"
+        )
 
-        console.log(err);
+        .then((res) => {
 
-      });
+          setFees(
+            res.data
+          );
+
+        })
+
+        .catch(console.log);
+
+    };
+
+    fetchData();
+
+    const interval =
+      setInterval(
+        fetchData,
+        10000
+      );
+
+    return () =>
+      clearInterval(
+        interval
+      );
 
   }, []);
 
 
-  // FILTER DATA
+  /* FILTER LOGIC */
 
-  const filteredFees =
-    selectedBank === "All"
-      ? fees
-      : fees.filter(
-          (item) =>
-            item.bank === selectedBank
-        );
+  const filteredFees = fees.filter((item) => {
+
+    const bankMatch =
+
+      selectedBank === "All" ||
+
+      item.bank === selectedBank;
 
 
-  // DYNAMIC REGIONAL AVERAGE
+    const feeTypeMatch =
+
+      selectedFeeType === "All" ||
+
+      item.fee_type?.trim() ===
+      selectedFeeType;
+
+
+    return (
+      bankMatch &&
+      feeTypeMatch
+    );
+
+  });
+
+
+  /* REGIONAL AVERAGE */
 
   const regionalAverage =
-    filteredFees.length > 0
-      ? Math.round(
 
-          filteredFees.reduce(
-            (sum, item) =>
-              sum + item.fee,
-            0
-          ) / filteredFees.length
+    filteredFees.length > 0
+
+      ?
+
+      Math.round(
+
+        filteredFees.reduce(
+
+          (sum, item) =>
+
+            sum + item.fee,
+
+          0
 
         )
+
+        /
+
+        filteredFees.length
+
+      )
+
       : 0;
 
 
-  // DOWNLOAD DATA
+  /* DOWNLOAD */
 
   const downloadData = () => {
 
     const dataStr =
+
       "data:text/json;charset=utf-8," +
 
       encodeURIComponent(
 
         JSON.stringify(
+
           filteredFees,
+
           null,
+
           2
+
         )
 
       );
 
     const link =
-      document.createElement("a");
+      document.createElement(
+        "a"
+      );
 
-    link.href = dataStr;
+    link.href =
+      dataStr;
 
     link.download =
       "bank_fee_data.json";
@@ -96,263 +158,435 @@ export default function Home() {
 
   return (
 
-    <div className="flex h-screen bg-[#030712] text-white">
+<div className="
+flex
+h-screen
+bg-[#030712]
+text-white
+">
 
-      {/* MAP */}
+{/* LEFT PANEL */}
 
-      <div className="w-[70%]">
+<div className="
+w-[70%]
+flex
+flex-col
+">
 
-        <MapComponent
-          fees={filteredFees}
-        />
+<div className="
+p-6
+border-b
+border-gray-800
+">
 
-      </div>
+<h1 className="
+text-4xl
+font-bold
+text-cyan-400
+">
 
+Bank Fee Benchmark Map
 
-      {/* SIDEBAR */}
+</h1>
 
-      <div className="w-[30%] bg-[#0B1117] p-6 overflow-y-auto">
+<p className="
+text-gray-400
+mt-2
+">
 
-        {/* TITLE */}
+Real-time banking fee infrastructure visualization
 
-        <h1 className="text-3xl font-bold text-cyan-400 mb-2">
+</p>
 
-          Real Rails
+</div>
 
-        </h1>
 
-        <p className="text-gray-400 mb-6">
+<div className="flex-1">
 
-          Real-time banking fee infrastructure intelligence
+<MapComponent
 
-        </p>
+fees={filteredFees}
 
+/>
 
-        {/* FILTER */}
+</div>
 
-        <div className="border border-gray-800 rounded-xl p-4 mb-6">
+</div>
 
-          <h2 className="text-lg font-semibold mb-3">
 
-            Filter By Bank
+{/* SIDEBAR */}
 
-          </h2>
+<div className="
+w-[30%]
+bg-[#0B1117]
+p-6
+overflow-y-auto
+">
 
-          <select
+<h1 className="
+text-3xl
+font-bold
+text-cyan-400
+mb-2
+">
 
-            className="
-            w-full
-            p-3
-            rounded-lg
-            bg-[#111827]
-            border
-            border-gray-700
-            "
+Real Rails
 
-            value={selectedBank}
+</h1>
 
-            onChange={(e)=>
+<p className="
+text-gray-400
+mb-6
+">
 
-              setSelectedBank(
-                e.target.value
-              )
+Real-time banking fee infrastructure intelligence
 
-            }
+</p>
 
-          >
 
-            <option value="All">
+{/* BANK FILTER */}
 
-              All Banks
+<div className="
+border
+border-gray-800
+rounded-xl
+p-4
+mb-6
+">
 
-            </option>
+<h2 className="
+text-lg
+font-semibold
+mb-3
+">
 
+Filter By Bank
 
-            {fees.map(
-              (item,index)=>(
+</h2>
 
-                <option
+<select
 
-                  key={index}
+className="
+w-full
+p-3
+rounded-lg
+bg-[#111827]
+border
+border-gray-700
+"
 
-                  value={item.bank}
+value={selectedBank}
 
-                >
+onChange={(e)=>
 
-                  {item.bank}
+setSelectedBank(
+e.target.value
+)
 
-                </option>
+}
 
-              )
-            )}
+>
 
-          </select>
+<option value="All">
 
-        </div>
+All Banks
 
+</option>
 
-        {/* ANALYTICS */}
+{[
 
-        <div className="border border-gray-800 rounded-xl p-4 mb-6">
+...new Set(
 
-          <h2 className="text-lg font-semibold mb-4">
+fees.map(
+(item)=>
+item.bank
+)
 
-            Fee Comparison Analytics
+)
 
-          </h2>
+].map(
 
-          <FeeChart
-            fees={filteredFees}
-          />
+(bank,index)=>(
 
-        </div>
+<option
 
+key={index}
 
-        {/* METRIC */}
+value={bank}
 
-        <div className="border border-gray-800 rounded-xl p-4 mb-6">
+>
 
-          <h2 className="text-lg font-semibold mb-2">
+{bank}
 
-            Regional Average
+</option>
 
-          </h2>
+)
 
-          <p className="text-4xl font-bold text-cyan-400">
+)}
 
-            ₹{regionalAverage}
+</select>
 
-          </p>
+</div>
 
-          <p className="text-gray-500 mt-2">
 
-            Cross-bank transfer benchmark
 
-          </p>
+{/* FEE FILTER */}
 
-        </div>
+<div className="
+border
+border-gray-800
+rounded-xl
+p-4
+mb-6
+">
 
+<h2 className="
+text-lg
+font-semibold
+mb-3
+">
 
-        {/* WHY */}
+Filter By Fee Type
 
-        <div className="border border-gray-800 rounded-xl p-4 mb-6">
+</h2>
 
-          <h2 className="text-lg font-semibold mb-3">
+<select
 
-            Why This Matters
+className="
+w-full
+p-3
+rounded-lg
+bg-[#111827]
+border
+border-gray-700
+"
 
-          </h2>
+value={selectedFeeType}
 
-          <p className="text-gray-400">
+onChange={(e)=>
 
-            High transfer fees increase remittance friction
-            across banking corridors.
+setSelectedFeeType(
+e.target.value
+)
 
-          </p>
+}
 
-        </div>
+>
 
+<option value="All">
 
-        {/* CONTROL */}
+All Types
 
-        <div className="border border-gray-800 rounded-xl p-4 mb-6">
+</option>
 
-          <h2 className="text-lg font-semibold mb-3">
+{[
 
-            Who Controls The Rail
+...new Set(
 
-          </h2>
+fees
 
-          <p className="text-gray-400">
+.filter(
+(item)=>
+item.fee_type
+)
 
-            Large banking institutions dominate payment
-            infrastructure and influence pricing.
+.map(
+(item)=>
+item.fee_type.trim()
+)
 
-          </p>
+)
 
-        </div>
+].map(
 
+(type,index)=>(
 
-        {/* DOWNLOAD */}
+<option
 
-        <button
+key={index}
 
-          onClick={downloadData}
+value={type}
 
-          className="
-          w-full
-          bg-cyan-400
-          text-black
-          font-semibold
-          p-3
-          rounded-xl
-          mb-6
-          hover:opacity-90
-          "
+>
 
-        >
+{type}
 
-          Download Sample Data
+</option>
 
-        </button>
+)
 
+)}
 
-        {/* BANK CARDS */}
+</select>
 
-        <div className="space-y-4">
+</div>
 
-          {filteredFees.map(
-            (item,index)=>(
 
-              <div
 
-                key={index}
+{/* ANALYTICS */}
 
-                className="
-                border
-                border-gray-800
-                rounded-xl
-                p-4
-                bg-[#111827]
-                "
+<div className="
+border
+border-gray-800
+rounded-xl
+p-4
+mb-6
+">
 
-              >
+<h2 className="
+text-lg
+font-semibold
+mb-4
+">
 
-                <h2 className="text-xl font-semibold text-cyan-400">
+Fee Comparison Analytics
 
-                  {item.bank}
+</h2>
 
-                </h2>
+<FeeChart
 
-                <p className="text-gray-400">
+fees={filteredFees}
 
-                  {item.city}
+/>
 
-                </p>
+</div>
 
-                <p className="mt-2">
 
-                  Fee: ₹{item.fee}
 
-                </p>
+{/* METRIC */}
 
-                <p className="text-sm text-gray-500 mt-1">
+<div className="
+border
+border-gray-800
+rounded-xl
+p-4
+mb-6
+">
 
-                  {item.status}
+<h2 className="
+text-lg
+font-semibold
+mb-2
+">
 
-                </p>
+Regional Average
 
-              </div>
+</h2>
 
-            )
-          )}
+<p className="
+text-4xl
+font-bold
+text-cyan-400
+">
 
-        </div>
+₹{regionalAverage}
 
-      </div>
+</p>
 
-    </div>
+</div>
 
-  );
+
+
+{/* DOWNLOAD */}
+
+<button
+
+onClick={downloadData}
+
+className="
+w-full
+bg-cyan-400
+text-black
+font-semibold
+p-3
+rounded-xl
+mb-6
+"
+
+>
+
+Download Sample Data
+
+</button>
+
+
+
+{/* BANK CARDS */}
+
+<div className="
+space-y-4
+">
+
+{filteredFees.map(
+
+(item,index)=>(
+
+<div
+
+key={index}
+
+className="
+border
+border-gray-800
+rounded-xl
+p-4
+bg-[#111827]
+"
+
+>
+
+<h2 className="
+text-xl
+font-semibold
+text-cyan-400
+">
+
+{item.bank}
+
+</h2>
+
+<p>
+
+{item.city}
+
+</p>
+
+<p>
+
+Fee: ₹{item.fee}
+
+</p>
+
+<p className="
+text-gray-500
+text-sm
+">
+
+{item.fee_type}
+
+</p>
+
+<p className="
+text-gray-500
+text-sm
+">
+
+{item.status}
+
+</p>
+
+</div>
+
+)
+
+)}
+
+</div>
+
+</div>
+
+</div>
+
+);
 
 }
